@@ -32,3 +32,13 @@ set(ENGINE_CODE_NAME "Cell" CACHE STRING "Your own engine code name as string.")
 if (USE_CUSTOM_ENGINE)
   add_definitions(-DENGINE_CODE_NAME)
 endif()
+
+option(COMPILE_AS_SERVER    "Initialize project as server"  TRUE)
+if (COMPILE_AS_SERVER)
+  add_definitions(-DCOMPILE_AS_SERVER)
+endif()
+
+option(COMPILE_AS_CLIENT    "Initialize project as client"  FALSE)
+if (COMPILE_AS_CLIENT)
+  add_definitions(-DCOMPILE_AS_CLIENT)
+endif()

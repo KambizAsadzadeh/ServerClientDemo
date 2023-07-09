@@ -1,148 +1,90 @@
 /*!
+ * @name Project Template as known PT.
+ * @details A template for modern C++ projects with useful features for developing cross-platform products.
  *
- * Copyright (c) 2021 Kambiz Asadzadeh
- * Copyright (c) 2023 Genyleap
+ * @copyright (c) 2021 Kambiz Asadzadeh
+ * @copyright (c) 2023 Genyleap
+ * @url https://github.com/genyleap/Project-Template
  */
 
-#include <iostream>
-#include "utilities/featuretest.hpp"
-
-//! Examples
-#include "examples/compilertest.hpp"
-#include "examples/platformtest.hpp"
-#include "examples/librarytest.hpp"
-#include "examples/languagetest.hpp"
-#include "examples/configtest.hpp"
-
-//!JSon [Non-STL] Features
-#if defined(USE_JSON) && !defined(USE_BOOST)
-#include <json/json.h>
+#ifdef __has_include
+# if __has_include("common.hpp")
+#   include "common.hpp"
+# endif
 #else
-//#include <boost/json.hpp>
+#error There is no PT's common file!
 #endif
-//!Google Test
-#ifdef USE_GOOGLE_TEST
-#include <gtest/gtest.h>
 
-class Counter {
-public:
-    // Returns the current counter value, and increments it.
-    int Increment() {
-        return m_counter++;
+#ifdef COMPILE_AS_SERVER
+#include "server.hpp"
+#endif
+
+#ifdef COMPILE_AS_CLIENT
+#include "client.hpp"
+#endif
+
+PROJECT_USING_NAMESPACE std;
+
+int main() {
+
+#ifdef COMPILE_AS_SERVER
+    // Create and start the server
+    Server server(12345);
+    if (!server.start()) {
+        return 1;
     }
 
-           // Returns the current counter value, and decrements it.
-           // counter can not be less than 0, return 0 in this case
-    int Decrement() {
-        if (m_counter == 0) {
-            return m_counter;
-        } else  {
-            return m_counter--;
-        }
+    // Accept client connection
+    if (!server.acceptConnection()) {
+        return 1;
     }
 
-           // Prints the current counter value to STDOUT.
-    void Print() const {
-        printf("%d", m_counter);
+    // Receive data from the client
+    char buffer[1024];
+    if (!server.receiveData(buffer, sizeof(buffer))) {
+        return 1;
     }
-private:
-    int m_counter;
-};
 
-//TEST UNIT
-TEST(Counter, Increment) {
-    Counter c;
+    std::cout << "Received data: " << buffer << std::endl;
 
-           // Test that counter 0 returns 0
-    EXPECT_EQ(0, c.Decrement());
+    // Send a response to the client
+    const char* response = "Hello from the server!";
+    if (!server.sendData(response)) {
+        return 1;
+    }
 
-           // EXPECT_EQ() evaluates its arguments exactly once, so they
-           // can have side effects.
-
-    EXPECT_EQ(0, c.Increment());
-    EXPECT_EQ(1, c.Increment());
-    EXPECT_EQ(2, c.Increment());
-
-    EXPECT_EQ(3, c.Decrement());
-}
+    // Close the connection
+    server.closeConnection();
 
 #endif
 
-//!Catch2
-#ifdef USE_CATCH2
-# include <catch2/catch_all.hpp>
+#ifdef COMPILE_AS_CLIENT
 
-#define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
+    // Create and connect the client
+    Client client("127.0.0.1", 12345);
+    if (!client.connectToServer()) {
+        return 1;
+    }
 
-unsigned int Factorial( unsigned int number ) {
-    return number <= 1 ? number : Factorial(number-1)*number;
-}
+    // Send data to the server
+    const char* data = "Hello from the client!";
+    if (!client.sendData(data)) {
+        return 1;
+    }
 
-TEST_CASE( "Factorials are computed", "[factorial]" ) {
-    REQUIRE( Factorial(1) == 1 );
-    REQUIRE( Factorial(2) == 2 );
-    REQUIRE( Factorial(3) == 6 );
-    REQUIRE( Factorial(10) == 3628800 );
-}
+    // Receive response from the server
+    char responseBuffer[1024];
+    if (!client.receiveData(responseBuffer, sizeof(responseBuffer))) {
+        return 1;
+    }
 
-#endif
+    std::cout << "Received response: " << responseBuffer << std::endl;
 
-//ThirdParty libs
-#include "examples/thirdpartytest.hpp"
-
-#ifdef USE_OPENMESH
-#include <OpenMesh/Core/IO/MeshIO.hh>
-#endif
-
-
-#include <config.hpp> //Project Config
-
-using namespace std;
-
-#include <iostream>
-
-int main()
-{
-    cout << "Hello World!" << endl;
-
-    //!Config Test
-    ConfigTest config;
-    config.readConfig();
-
-           //!Compiler Test
-    CompilerTest compiler;
-    compiler.getCompilerInfo();
-
-           //!Platform Test
-    PlatformTest platform;
-    platform.getPlatformInfo();
-
-    //!Library Test
-    LibraryTest library;
-
-#ifdef USE_OPENSSL
-        library.testOpenSSL(); // OpenSSL
-#endif
-
-#ifdef USE_BOOST
-        library.testBoost(); // Boost
-#endif
-
-#ifdef USE_OPENCV
-        library.testOpenCV(); // OpenCV
-#endif
-
-
-    //!Language Features
-    LanguageTest language;
-    language.checkFeatures();
-
-    //!ThirdParty Library
-    ThirdPartyTest thirdPartyTest;
-    thirdPartyTest.testFmt();
-    thirdPartyTest.testCtre();
-
-
+    // Close the connection
+    client.closeConnection();
 
     return 0;
+
+#endif
+
 }
